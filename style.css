@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .active {
+    @apply text-white bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 rounded-lg;
+  }
+
+  .notActive {
+    @apply rounded-lg hover:text-gray-900 dark:hover:text-white;
+  }
+}
