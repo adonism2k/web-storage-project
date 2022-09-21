@@ -1,4 +1,7 @@
 # Web Storage Bookshelf Apps
+Authors: **Abdian Rizky Ramadan**
+Date: **2022-09-22**
+URL: https://github.com/adonism2k/web-storage-project
 
 ## Introduction
 
