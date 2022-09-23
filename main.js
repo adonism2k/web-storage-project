@@ -42,6 +42,7 @@ const books = [];
 const SAVED_EVENT = "saved-book";
 const RENDER_EVENT = "render-book";
 const STORAGE_KEY = "BOOKSHELF_APPS";
+const STATUS = "status";
 const searchInput = document.getElementById("searchBookInput");
 const allBooksButton = document.getElementById("allBooks");
 const notCompletedButton = document.getElementById("notCompleted");
@@ -79,23 +80,24 @@ function findBookIndex(bookId) {
   return -1;
 }
 
-function filterBookByStatus(status) {
+function filterBook(filter) {
   let filteredBooks;
-  if (status === "all") {
-    filteredBooks = books;
-  } else if (status === "doneReading") {
+  if (filter === "search") {
+    const searchValue = searchInput.value.toLowerCase();
+    filteredBooks = books.filter(
+      (book) =>
+        book.title.toLowerCase().includes(searchValue) ||
+        book.author.toLowerCase().includes(searchValue)
+    );
+  } else if (filter === "doneReading") {
     filteredBooks = books.filter((book) => book.isCompleted === true);
-  } else if (status === "notCompleted") {
+  } else if (filter === "notCompleted") {
     filteredBooks = books.filter((book) => book.isCompleted === false);
+  } else {
+    filteredBooks = books;
   }
-
-  const bookList = document.getElementById("bookList");
-  bookList.innerHTML = "";
-
-  for (const bookItem of filteredBooks) {
-    const bookElement = makeBook(bookItem);
-    bookList.innerHTML += bookElement;
-  }
+  
+  return filteredBooks;
 }
 
 function isStorageExist() {
@@ -219,33 +221,17 @@ function makeBook(bookObject) {
   return html;
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  const submitForm = document.getElementById("addBookForm");
-
-  submitForm.addEventListener("submit", function (event) {
-    event.preventDefault();
-    addNewBook();
-  });
-
-  if (isStorageExist()) {
-    loadDataFromStorage();
-  }
-});
-
-document.addEventListener(SAVED_EVENT, () => {});
-
-document.addEventListener(RENDER_EVENT, function () {
+function renderBook(filter) {
   const bookList = document.getElementById("bookList");
+  const filteredBooks = filterBook(filter);
   bookList.innerHTML = "";
 
-  for (const bookItem of books) {
-    const bookElement = makeBook(bookItem);
+  for (const book of filteredBooks) {
+    const bookElement = makeBook(book);
     bookList.innerHTML += bookElement;
   }
-});
 
-document.addEventListener(RENDER_EVENT, () => {
-  for (const book of books) {
+  for (const book of filteredBooks) {
     const deleteBtn = document.getElementById(`deleteBook-${book.id}`);
     if (deleteBtn) {
       deleteBtn.addEventListener("click", function (event) {
@@ -272,43 +258,123 @@ document.addEventListener(RENDER_EVENT, () => {
       });
     }
   }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const submitForm = document.getElementById("addBookForm");
+
+  submitForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    addNewBook();
+  });
+
+  if (isStorageExist()) {
+    loadDataFromStorage();
+  }
+
+  searchInput.addEventListener("input", () => {
+    const searchValue = searchInput.value.toLowerCase();
+    renderBook(searchValue);
+    document.dispatchEvent(new Event(RENDER_EVENT));
+  });
+
+  allBooksButton.addEventListener("click", () => {
+    doneReadingButton.classList.remove("active");
+    notCompletedButton.classList.remove("active");
+    doneReadingButton.classList.add("notActive");
+    notCompletedButton.classList.add("notActive");
+    allBooksButton.classList.add("active");
+    renderBook();
+    localStorage.setItem(STATUS, "all");
+  });
+
+  notCompletedButton.addEventListener("click", () => {
+    allBooksButton.classList.remove("active");
+    doneReadingButton.classList.remove("active");
+    allBooksButton.classList.add("notActive");
+    doneReadingButton.classList.add("notActive");
+    notCompletedButton.classList.add("active");
+    renderBook("notCompleted");
+    localStorage.setItem(STATUS, "notCompleted");
+  });
+
+  doneReadingButton.addEventListener("click", () => {
+    allBooksButton.classList.remove("active");
+    notCompletedButton.classList.remove("active");
+    allBooksButton.classList.add("notActive");
+    notCompletedButton.classList.add("notActive");
+    doneReadingButton.classList.add("active");
+    renderBook("doneReading");
+    localStorage.setItem(STATUS, "doneReading");
+    document.getElementById("isCompleted").checked = true;
+  });
 });
 
-searchInput.addEventListener("input", () => {
-  const searchValue = searchInput.value.toLowerCase();
-  const filteredBooks = books.filter((book) => book.title.toLowerCase().includes(searchValue.toLowerCase()));
+document.addEventListener(SAVED_EVENT, () => {
+  console.log("Data berhasil disimpan.");
+});
+
+document.addEventListener(RENDER_EVENT, function () {
   const bookList = document.getElementById("bookList");
+  const status = localStorage.getItem(STATUS);
+  const filteredBooks = filterBook(status);
   bookList.innerHTML = "";
 
-  for (const bookItem of filteredBooks) {
-    const bookElement = makeBook(bookItem);
+  for (const book of filteredBooks) {
+    const bookElement = makeBook(book);
     bookList.innerHTML += bookElement;
+  }
+
+  for (const book of filteredBooks) {
+    const deleteBtn = document.getElementById(`deleteBook-${book.id}`);
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        deleteBook(book.id);
+      });
+    }
+  
+    const undoBtn = document.getElementById(`undoBookButton-${book.id}`);
+    if (undoBtn) {
+      undoBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        undoBookFromCompleted(book.id);
+      });
+    }
+  
+    const completeBtn = document.getElementById(
+      `completedBookButton-${book.id}`
+    );
+    if (completeBtn) {
+      completeBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        addBookToCompleted(book.id);
+      });
+    }
   }
 });
 
-allBooksButton.addEventListener("click", () => {
-  filterBookByStatus("all");
+if (localStorage.getItem(STATUS) === null) {
+  localStorage.setItem(STATUS, "all");
+}
+
+if (localStorage.getItem(STATUS) === "all") {
   doneReadingButton.classList.remove("active");
   notCompletedButton.classList.remove("active");
   doneReadingButton.classList.add("notActive");
   notCompletedButton.classList.add("notActive");
   allBooksButton.classList.add("active");
-})
-
-notCompletedButton.addEventListener("click", () => {
-  filterBookByStatus("notCompleted");
+} else if (localStorage.getItem(STATUS) === "notCompleted") {
   allBooksButton.classList.remove("active");
   doneReadingButton.classList.remove("active");
   allBooksButton.classList.add("notActive");
   doneReadingButton.classList.add("notActive");
   notCompletedButton.classList.add("active");
-})
-
-doneReadingButton.addEventListener("click", () => {
-  filterBookByStatus("doneReading");
+} else if (localStorage.getItem(STATUS) === "doneReading") {
   allBooksButton.classList.remove("active");
   notCompletedButton.classList.remove("active");
   allBooksButton.classList.add("notActive");
   notCompletedButton.classList.add("notActive");
   doneReadingButton.classList.add("active");
-})
+  document.getElementById("isCompleted").checked = true;
+}
