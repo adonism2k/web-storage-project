@@ -42,7 +42,7 @@ const books = [];
 const SAVED_EVENT = "saved-book";
 const RENDER_EVENT = "render-book";
 const STORAGE_KEY = "BOOKSHELF_APPS";
-const STATUS = "status";
+const FILTER = "filter";
 const searchInput = document.getElementById("searchBookInput");
 const allBooksButton = document.getElementById("allBooks");
 const notCompletedButton = document.getElementById("notCompleted");
@@ -82,19 +82,23 @@ function findBookIndex(bookId) {
 
 function filterBook(filter) {
   let filteredBooks;
-  if (filter === "search") {
-    const searchValue = searchInput.value.toLowerCase();
+  if (filter && filter !== "all" && filter !== "doneReading" && filter !== "notCompleted") {
+    // const searchValue = searchInput.value.toLowerCase();
     filteredBooks = books.filter(
       (book) =>
-        book.title.toLowerCase().includes(searchValue) ||
-        book.author.toLowerCase().includes(searchValue)
+        book.title.toLowerCase().includes(filter) ||
+        book.author.toLowerCase().includes(filter)
     );
+    searchInput.value = filter;
   } else if (filter === "doneReading") {
     filteredBooks = books.filter((book) => book.isCompleted === true);
+    searchInput.value = "";
   } else if (filter === "notCompleted") {
     filteredBooks = books.filter((book) => book.isCompleted === false);
+    searchInput.value = "";
   } else {
     filteredBooks = books;
+    searchInput.value = "";
   }
   
   return filteredBooks;
@@ -275,7 +279,7 @@ document.addEventListener("DOMContentLoaded", function () {
   searchInput.addEventListener("input", () => {
     const searchValue = searchInput.value.toLowerCase();
     renderBook(searchValue);
-    document.dispatchEvent(new Event(RENDER_EVENT));
+    localStorage.setItem(FILTER, searchValue);
   });
 
   allBooksButton.addEventListener("click", () => {
@@ -285,7 +289,7 @@ document.addEventListener("DOMContentLoaded", function () {
     notCompletedButton.classList.add("notActive");
     allBooksButton.classList.add("active");
     renderBook();
-    localStorage.setItem(STATUS, "all");
+    localStorage.setItem(FILTER, "all");
   });
 
   notCompletedButton.addEventListener("click", () => {
@@ -295,7 +299,7 @@ document.addEventListener("DOMContentLoaded", function () {
     doneReadingButton.classList.add("notActive");
     notCompletedButton.classList.add("active");
     renderBook("notCompleted");
-    localStorage.setItem(STATUS, "notCompleted");
+    localStorage.setItem(FILTER, "notCompleted");
   });
 
   doneReadingButton.addEventListener("click", () => {
@@ -305,7 +309,7 @@ document.addEventListener("DOMContentLoaded", function () {
     notCompletedButton.classList.add("notActive");
     doneReadingButton.classList.add("active");
     renderBook("doneReading");
-    localStorage.setItem(STATUS, "doneReading");
+    localStorage.setItem(FILTER, "doneReading");
     document.getElementById("isCompleted").checked = true;
   });
 });
@@ -316,8 +320,8 @@ document.addEventListener(SAVED_EVENT, () => {
 
 document.addEventListener(RENDER_EVENT, function () {
   const bookList = document.getElementById("bookList");
-  const status = localStorage.getItem(STATUS);
-  const filteredBooks = filterBook(status);
+  const filter = localStorage.getItem(FILTER);
+  const filteredBooks = filterBook(filter);
   bookList.innerHTML = "";
 
   for (const book of filteredBooks) {
@@ -354,27 +358,33 @@ document.addEventListener(RENDER_EVENT, function () {
   }
 });
 
-if (localStorage.getItem(STATUS) === null) {
-  localStorage.setItem(STATUS, "all");
+if (localStorage.getItem(FILTER) === null) {
+  localStorage.setItem(FILTER, "all");
 }
 
-if (localStorage.getItem(STATUS) === "all") {
+if (localStorage.getItem(FILTER) === "all") {
   doneReadingButton.classList.remove("active");
   notCompletedButton.classList.remove("active");
   doneReadingButton.classList.add("notActive");
   notCompletedButton.classList.add("notActive");
   allBooksButton.classList.add("active");
-} else if (localStorage.getItem(STATUS) === "notCompleted") {
+} else if (localStorage.getItem(FILTER) === "notCompleted") {
   allBooksButton.classList.remove("active");
   doneReadingButton.classList.remove("active");
   allBooksButton.classList.add("notActive");
   doneReadingButton.classList.add("notActive");
   notCompletedButton.classList.add("active");
-} else if (localStorage.getItem(STATUS) === "doneReading") {
+} else if (localStorage.getItem(FILTER) === "doneReading") {
   allBooksButton.classList.remove("active");
   notCompletedButton.classList.remove("active");
   allBooksButton.classList.add("notActive");
   notCompletedButton.classList.add("notActive");
   doneReadingButton.classList.add("active");
   document.getElementById("isCompleted").checked = true;
+} else {
+  doneReadingButton.classList.remove("active");
+  notCompletedButton.classList.remove("active");
+  doneReadingButton.classList.add("notActive");
+  notCompletedButton.classList.add("notActive");
+  allBooksButton.classList.add("active");
 }
